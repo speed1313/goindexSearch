@@ -13,17 +13,15 @@ $ go install github.com/speed1313/enumResearch/cmd/enumResearch
 
 - Run goindexSearch
 ```
-$ go run main.go -cmd vet -vettool /path/of/enumResearch
-golang.org/x/sys is using enum
-golang.org/x/crypto is using enum
-golang.org/x/text is using enum
-Number of packages which use enum: 3/6 [30.459553879s]
+$ go run main.go -cmd vet -vettool /Users/sugiurahajime/go/bin/enumResearch
+golang.org/x/text
+Number of packages which is pointed out: 1/6 [21.194701473s]
 ```
 
 - Run goindexSearch with grep
 ```
-$ go run main.go -cmd grep  -pattern "\benum\b"
-golang.org/x/sys is using enum
-golang.org/x/text is using enum
-Number of packages which use enum: 2/6 [13.4569623s]
+$ go run main.go -cmd grep  -pattern "\benum\b" -n 10
+golang.org/x/sys
+golang.org/x/text
+Number of packages which is pointed out: 2/6 [7.064072991s]
 ```

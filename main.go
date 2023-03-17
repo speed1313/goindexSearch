@@ -34,7 +34,6 @@ func main() {
 	}
 	start := time.Now()
 	for i := 0; i < (*searchNum)/10; i++ {
-		fmt.Println("searching", i*10, "-", (i+1)*10, "/", *searchNum)
 		var wg sync.WaitGroup
 		for _, pkgname := range pkgLists[i*10 : (i+1)*10] {
 			wg.Add(1)
