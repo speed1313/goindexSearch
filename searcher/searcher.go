@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 )
 
+// get package list from https://index.golang.org/index
 func GetPkgList() []string {
 	response, err := http.Get("https://index.golang.org/index")
 	if err != nil {
@@ -35,6 +36,7 @@ func GetPkgList() []string {
 	return pkgLists
 }
 
+
 type EnumSearcher interface {
 	Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error
 }
@@ -42,7 +44,7 @@ type EnumSearcher interface {
 func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error{
 	dir := getHashedDir(pkgname)
 	defer cleanWorkSpace(pkgname, dir)
-	
+
 	if _, err := os.Stat(dir); os.IsExist(err) {
 		return err
 	}
@@ -60,10 +62,10 @@ func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher En
 	if err := searcher.Search(dir, pkgname, enumCount, pkgCount); err != nil {
 		return err
 	}
-
 	return nil
 }
 
+// cleanWorkSpace clean tmp directories and go clean -i packages
 func cleanWorkSpace(pkgname, dir string) error{
 	arg := path.Join(pkgname, "...")
 	// clean pkg
@@ -79,6 +81,7 @@ func cleanWorkSpace(pkgname, dir string) error{
 	return nil
 }
 
+// removeDuplicate remove duplicate elements in slice
 func removeDuplicate[T string | int](sliceList []T) []T {
 	allKeys := make(map[T]bool)
 	list := []T{}
@@ -91,6 +94,7 @@ func removeDuplicate[T string | int](sliceList []T) []T {
 	return list
 }
 
+// getHashedDir get sha256 hash of the package name
 func getHashedDir(pkgname string) string {
 	hashDir := sha256.Sum256([]byte(pkgname))
 	dir := fmt.Sprintf("%x", hashDir[:8])

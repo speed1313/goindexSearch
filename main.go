@@ -11,11 +11,10 @@ import (
 )
 
 func main() {
-	// Make HTTP GET request
 	enumCount := uint64(0)
 	pkgCount := uint64(0)
 	pkgLists := searcher.GetPkgList()
-	// get search way from command
+
 	cmd := flag.String("cmd", "", "Way of search. vet(default) or grep")
 	vettoolPath := flag.String("vettool", "", "Path of vet tool")
 	pattern := flag.String("pattern", `\benum\b`, "pattern of grep")
