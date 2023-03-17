@@ -36,13 +36,13 @@ func GetPkgList() []string {
 }
 
 type EnumSearcher interface {
-	Search(dir string, pkgname string, enumCount *uint64) error
+	Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error
 }
 
-func EnumSearch(pkgname string, enumCount *uint64, searcher EnumSearcher) {
+func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error{
 	dir := getHashedDir(pkgname)
 	if _, err := os.Stat(dir); os.IsExist(err) {
-		fmt.Printf("dir %s already exist", dir)
+		return err
 	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		fmt.Printf("mkdir %s failed: %s", pkgname, err)
@@ -52,27 +52,31 @@ func EnumSearch(pkgname string, enumCount *uint64, searcher EnumSearcher) {
 		cmd := exec.Command("go", "mod", "init", "a")
 		cmd.Dir = path.Join(".", dir)
 		if err := cmd.Run(); err != nil {
-			fmt.Printf("%s go mod init failed: %s\n", pkgname, err)
+			return err
 		}
 	}
-	if err := searcher.Search(dir, pkgname, enumCount); err != nil {
-		fmt.Printf("enum search failed: %s\n", err)
+	if err := searcher.Search(dir, pkgname, enumCount, pkgCount); err != nil {
+		return err
 	}
-	cleanWorkSpace(pkgname, dir)
+	if err := cleanWorkSpace(pkgname, dir); err != nil{
+		return err
+	}
+	return nil
 }
 
-func cleanWorkSpace(pkgname, dir string) {
+func cleanWorkSpace(pkgname, dir string) error{
 	arg := path.Join(pkgname, "...")
 	// clean pkg
 	cmd := exec.Command("go", "clean", "-i", arg)
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("go clean %s failed: %s\n", pkgname, err)
+		return err
 	}
 	// remove dir
 	if err := os.RemoveAll(dir); err != nil {
-		log.Printf("remove dir %s failed: %s\n", dir, err)
+		return err
 	}
+	return nil
 }
 
 func removeDuplicate[T string | int](sliceList []T) []T {
@@ -94,38 +98,50 @@ func getHashedDir(pkgname string) string {
 	return dir
 }
 
-type VetSearcher struct{}
+type VetSearcher struct{
+	VettoolPath string
+}
 
-func (VetSearcher) Search(dir string, pkgname string, enumCount *uint64) error {
+func (v VetSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error {
 	arg := path.Join(pkgname, "...")
 	cmd := exec.Command("go", "get", arg)
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("go get %s failed: %s\n", pkgname, err)
 		return err
+	}else{
+		atomic.AddUint64(pkgCount, 1)
 	}
-	cmd = exec.Command("go", "vet", "-vettool=/Users/sugiurahajime/go/bin/enumResearch", arg)
+	option := []string{"vet"}
+
+	if v.VettoolPath != "" {
+		option = append(option, "-vettool", v.VettoolPath)
+	}
+	option = append(option, arg)
+	cmd = exec.Command("go", option...)
 	cmd.Dir = path.Join(".", dir)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		// if -v is set, print output
+		// TODO: if -v is set, print output
 		// print("vet output: ", string(out))
 		atomic.AddUint64(enumCount, 1)
-		println(pkgname, "is using enum")
+		println(pkgname)
 	}
 	return nil
 }
 
-type GrepSearcher struct{}
+type GrepSearcher struct{
+	Pattern string
+}
 
 // "grep  $(go list -f '{{.Dir}}' $(go list -f '{{join .Deps "\n"}}' a))"
-func (GrepSearcher) Search(dir string, pkgname string, enumCount *uint64) error {
+func (g GrepSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error {
 	arg := path.Join(pkgname, "...")
 	cmd := exec.Command("go", "get", arg)
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("go get %s failed: %s\n", pkgname, err)
 		return err
+	}else{
+		atomic.AddUint64(pkgCount, 1)
 	}
 	cmd = exec.Command("go", "list", "-f", "{{.Dir}}", arg)
 	cmd.Dir = path.Join(".", dir)
@@ -135,7 +151,7 @@ func (GrepSearcher) Search(dir string, pkgname string, enumCount *uint64) error 
 	}
 	isEnumUsed := false
 	for _, targetdir := range strings.Split(string(out), "\n") {
-		cmd = exec.Command("grep", "-r", `\benum\b`, targetdir)
+		cmd = exec.Command("grep", "-r", g.Pattern, targetdir)
 		out, _ := cmd.Output()
 		if len(out) > 0 {
 			isEnumUsed = true
@@ -144,7 +160,7 @@ func (GrepSearcher) Search(dir string, pkgname string, enumCount *uint64) error 
 		}
 	}
 	if isEnumUsed {
-		fmt.Println(pkgname, "is using enum")
+		fmt.Println(pkgname)
 		atomic.AddUint64(enumCount, 1)
 	}
 

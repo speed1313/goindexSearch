@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+
+	"time"
 
 	"sync"
 
@@ -12,29 +15,42 @@ import (
 func main() {
 	// Make HTTP GET request
 	enumCount := uint64(0)
-	var wg sync.WaitGroup
+	pkgCount := uint64(0)
 	pkgLists := searcher.GetPkgList()
 	// get search way from command
-	cmd := flag.String("cmd", "", "way of search")
+	cmd := flag.String("cmd", "", "Way of search. vet(default) or grep")
+	vettoolPath := flag.String("vettool", "", "Path of vet tool")
+	pattern := flag.String("pattern", `\benum\b`, "pattern of grep")
+	searchNum := flag.Int("n", 10, "number of packages to search")
 	flag.Parse()
 	var s searcher.EnumSearcher
 	switch *cmd {
 	case "vet":
-		s = searcher.VetSearcher{}
+		s = searcher.VetSearcher{VettoolPath: *vettoolPath}
 	case "grep":
-		s = searcher.GrepSearcher{}
+		s = searcher.GrepSearcher{Pattern: *pattern}
 	default:
-		s = searcher.VetSearcher{}
+		log.Fatal("choose vet or grep")
 	}
-	for _, pkgname := range pkgLists[0:10] {
-		wg.Add(1)
-		go func(pkgname string, enumCount *uint64) {
-			defer func() {
-				wg.Done()
-			}()
-			searcher.EnumSearch(pkgname, enumCount, s)
-		}(pkgname, &enumCount)
+	start := time.Now()
+	for i := 0; i < (*searchNum)/10; i++ {
+		fmt.Println("searching", i*10, "-", (i+1)*10, "/", *searchNum)
+		var wg sync.WaitGroup
+		for _, pkgname := range pkgLists[i*10 : (i+1)*10] {
+			wg.Add(1)
+			go func(pkgname string) {
+				defer func() {
+					wg.Done()
+				}()
+				if err := searcher.EnumSearch(pkgname, &enumCount, &pkgCount, s); err != nil {
+					// fmt.Println(err)
+				}
+			}(pkgname)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
-	fmt.Printf("enum count: %d\n", enumCount)
+
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Number of packages which is pointed out: %d/%d [%s]\n", enumCount, pkgCount, elapsed)
 }

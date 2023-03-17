@@ -1,0 +1,6 @@
+github.com/speed1313/enumResearch v0.0.0-20230316093508-e191d2d1d647 h1:UrEsuqI4h5Zf0A3S345yToNYYbZDx89ItMw4H3kFmn4=
+github.com/speed1313/enumResearch v0.0.0-20230316093508-e191d2d1d647/go.mod h1:bBFpDSikFKI1tj1nha3eAKEXfWMgJqMQAbpce5oyGvk=
+github.com/speed1313/nilmiru v0.0.0-20230205100606-1be15eb1c025 h1:sWMFZuDhqwAklOGVB/8KP2Cq/pLzIYbkzGl41yZryAY=
+github.com/speed1313/nilmiru v0.0.0-20230205100606-1be15eb1c025/go.mod h1:19B7niaeAgyV1gN4cI7DmKGakdBRG32WEF+4w51zKis=
+golang.org/x/tools v0.1.5 h1:ouewzE6p+/VEB31YYnTbEJdi8pFqKp4P4n85vwo3DHA=
+golang.org/x/tools v0.1.5/go.mod h1:o0xws9oXOQQZyjljx8fwUC0k7L1pTE6eaCbjGeHmOkk=
