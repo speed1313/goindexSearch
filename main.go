@@ -15,10 +15,10 @@ func main() {
 	var wg sync.WaitGroup
 	pkgLists := searcher.GetPkgList()
 	// get search way from command
-	searcher := flag.String("cmd", "", "way of search")
+	cmd := flag.String("cmd", "", "way of search")
 	flag.Parse()
 	var s searcher.EnumSearcher
-	switch *searcher {
+	switch *cmd {
 	case "vet":
 		s = searcher.VetSearcher{}
 	case "grep":

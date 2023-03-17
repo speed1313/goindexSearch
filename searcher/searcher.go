@@ -61,7 +61,7 @@ func EnumSearch(pkgname string, enumCount *uint64, searcher EnumSearcher) {
 	cleanWorkSpace(pkgname, dir)
 }
 
-func CleanWorkSpace(pkgname, dir string) {
+func cleanWorkSpace(pkgname, dir string) {
 	arg := path.Join(pkgname, "...")
 	// clean pkg
 	cmd := exec.Command("go", "clean", "-i", arg)
@@ -75,7 +75,7 @@ func CleanWorkSpace(pkgname, dir string) {
 	}
 }
 
-func RemoveDuplicate[T string | int](sliceList []T) []T {
+func removeDuplicate[T string | int](sliceList []T) []T {
 	allKeys := make(map[T]bool)
 	list := []T{}
 	for _, item := range sliceList {
