@@ -41,6 +41,8 @@ type EnumSearcher interface {
 
 func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error{
 	dir := getHashedDir(pkgname)
+	defer cleanWorkSpace(pkgname, dir)
+	
 	if _, err := os.Stat(dir); os.IsExist(err) {
 		return err
 	}
@@ -58,9 +60,7 @@ func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher En
 	if err := searcher.Search(dir, pkgname, enumCount, pkgCount); err != nil {
 		return err
 	}
-	if err := cleanWorkSpace(pkgname, dir); err != nil{
-		return err
-	}
+
 	return nil
 }
 

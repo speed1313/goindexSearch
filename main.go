@@ -4,10 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/speed1313/goindexSearch/searcher"
 )
@@ -33,21 +31,21 @@ func main() {
 		log.Fatal("choose vet or grep")
 	}
 	start := time.Now()
-	for i := 0; i < (*searchNum)/10; i++ {
-		var wg sync.WaitGroup
-		for _, pkgname := range pkgLists[i*10 : (i+1)*10] {
-			wg.Add(1)
-			go func(pkgname string) {
-				defer func() {
-					wg.Done()
-				}()
-				if err := searcher.EnumSearch(pkgname, &enumCount, &pkgCount, s); err != nil {
-					// fmt.Println(err)
-				}
-			}(pkgname)
-		}
-		wg.Wait()
+	var wg sync.WaitGroup
+	wg.Add(*searchNum)
+	maxGoroutines := 10
+	guard := make(chan struct{}, maxGoroutines)
+	for _, pkgname := range pkgLists[:*searchNum] {
+		guard <- struct{}{}
+		go func(pkgname string) {
+			defer func() {
+				wg.Done()
+				<-guard
+			}()
+			searcher.EnumSearch(pkgname, &enumCount, &pkgCount, s)
+		}(pkgname)
 	}
+	wg.Wait()
 
 	t := time.Now()
 	elapsed := t.Sub(start)
