@@ -34,6 +34,9 @@ func main() {
 	wg.Add(*searchNum)
 	maxGoroutines := 10
 	guard := make(chan struct{}, maxGoroutines)
+	// speed up idea
+	// - Execute go vet after filtering by grep.
+	// - maxGoroutines should be adjusted according to the number of CPU cores.
 	for _, pkgname := range pkgLists[:*searchNum] {
 		guard <- struct{}{}
 		go func(pkgname string) {
