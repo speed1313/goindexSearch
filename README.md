@@ -11,7 +11,7 @@ $ go get github.com/speed1313/enumResearch/cmd/enumResearch
 $ go install github.com/speed1313/enumResearch/cmd/enumResearch
 ```
 
-- Run goindexSearch
+- Run goindexSearch with go vet
 ```
 $ go run main.go -cmd vet -vettool /Users/sugiurahajime/go/bin/enumResearch
 golang.org/x/text
