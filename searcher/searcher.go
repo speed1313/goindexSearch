@@ -14,6 +14,8 @@ import (
 )
 
 // get package list from https://index.golang.org/index
+// TODO: Use time stamp (e.g.https://index.golang.org/index?since=2019-04-10T19:08:52.997264Z)
+// to get all packages. Ref. https://index.golang.org/
 func GetPkgList() []string {
 	response, err := http.Get("https://index.golang.org/index")
 	if err != nil {
