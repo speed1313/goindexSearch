@@ -3,7 +3,7 @@ goindexsearch is a package that can do go vet and grep for all packages in https
 
 # Features
 - You can use grep or custom vet tool.
-
+- You can search for all packages in https://index.golang.org/index. (Currently only the default obtainable packages can be explored)
 # How to use
 - Install vettool you want to use.
 ```
