@@ -4,6 +4,10 @@ goindexsearch is a package that can do go vet and grep for all packages in https
 # Features
 - You can use grep or custom vet tool.
 - You can search for all packages in https://index.golang.org/index in chronological order. (Currently only the oldest 2000 packages can be searched.)
+
+# Use cases
+When adding new features like enum type to Golang, you may want to investigate a large number of packages to ensure backward compatibility.
+
 # How to use
 - Install vettool you want to use.
 ```
