@@ -1,4 +1,5 @@
 package searcher
+
 import (
 	"bufio"
 	"crypto/sha256"
@@ -11,28 +12,41 @@ import (
 	"path"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
-// get package list from https://index.golang.org/index
-// TODO: Use time stamp (e.g.https://index.golang.org/index?since=2019-04-10T19:08:52.997264Z)
-// to get all packages. Ref. https://index.golang.org/
-func GetPkgList() []string {
-	response, err := http.Get("https://index.golang.org/index")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	scanner := bufio.NewScanner(response.Body)
+// time format is RFC3339
+func GetPkgList(since, last time.Time) []string {
+	nextSince := since
+	pkgLists := make([]string,0)
 	type Message struct {
 		Path, Version, Timestamp string
 	}
-	pkgLists := make([]string, 0)
-	for scanner.Scan() {
-		var m Message
-		if err := json.Unmarshal(scanner.Bytes(), &m); err != nil {
-			log.Fatal(err)
+	url := "https://index.golang.org/index?since="
+	for ;;{
+		response, err := http.Get(url + nextSince.Format(time.RFC3339))
+		if err != nil {
+			log.Fatal("get package list failed: ", err)
 		}
-		pkgLists = append(pkgLists, m.Path)
+		defer response.Body.Close()
+		scanner := bufio.NewScanner(response.Body)
+		var m Message
+		for scanner.Scan() {
+			if err := json.Unmarshal(scanner.Bytes(), &m); err != nil {
+
+				log.Fatal("unmarshal failed: ", err)
+			}
+			pkgLists = append(pkgLists, m.Path)
+		}
+		pkgLists = removeDuplicate(pkgLists)
+		nextSince, err = time.Parse(time.RFC3339, m.Timestamp)
+		if err != nil {
+			log.Fatal("parse time failed: ", err)
+		}
+		if nextSince.After(last) {
+			break
+		}
+
 	}
 	pkgLists = removeDuplicate(pkgLists)
 	return pkgLists
