@@ -15,15 +15,16 @@ import (
 	"time"
 )
 
-// time format is RFC3339
+// get golang package list between since to last from "https://index.golang.org/index"
+// the time format is RFC3339
 func GetPkgList(since, last time.Time) []string {
 	nextSince := since
-	pkgLists := make([]string,0)
+	pkgLists := make([]string, 0)
 	type Message struct {
 		Path, Version, Timestamp string
 	}
 	url := "https://index.golang.org/index?since="
-	for ;;{
+	for {
 		response, err := http.Get(url + nextSince.Format(time.RFC3339))
 		if err != nil {
 			log.Fatal("get package list failed: ", err)
@@ -46,18 +47,16 @@ func GetPkgList(since, last time.Time) []string {
 		if nextSince.After(last) {
 			break
 		}
-
 	}
 	pkgLists = removeDuplicate(pkgLists)
 	return pkgLists
 }
 
-
 type EnumSearcher interface {
 	Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error
 }
 
-func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error{
+func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error {
 	dir := getHashedDir(pkgname)
 	defer cleanWorkSpace(pkgname, dir)
 
@@ -82,7 +81,7 @@ func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher En
 }
 
 // cleanWorkSpace clean tmp directories and go clean -i packages
-func cleanWorkSpace(pkgname, dir string) error{
+func cleanWorkSpace(pkgname, dir string) error {
 	arg := path.Join(pkgname, "...")
 	// clean pkg
 	cmd := exec.Command("go", "clean", "-i", arg)
@@ -118,7 +117,7 @@ func getHashedDir(pkgname string) string {
 	return dir
 }
 
-type VetSearcher struct{
+type VetSearcher struct {
 	VettoolPath string
 }
 
@@ -128,7 +127,7 @@ func (v VetSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCo
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
 		return err
-	}else{
+	} else {
 		atomic.AddUint64(pkgCount, 1)
 	}
 	option := []string{"vet"}
@@ -149,7 +148,7 @@ func (v VetSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCo
 	return nil
 }
 
-type GrepSearcher struct{
+type GrepSearcher struct {
 	Pattern string
 }
 
@@ -160,7 +159,7 @@ func (g GrepSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgC
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
 		return err
-	}else{
+	} else {
 		atomic.AddUint64(pkgCount, 1)
 	}
 	cmd = exec.Command("go", "list", "-f", "{{.Dir}}", arg)
