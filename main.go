@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
@@ -32,11 +33,10 @@ func main() {
 	start := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(*searchNum)
-	maxGoroutines := 10
+	maxGoroutines := runtime.NumCPU()
 	guard := make(chan struct{}, maxGoroutines)
 	// speed up idea
 	// - Execute go vet after filtering by grep.
-	// - maxGoroutines should be adjusted according to the number of CPU cores.
 	for _, pkgname := range pkgLists[:*searchNum] {
 		guard <- struct{}{}
 		go func(pkgname string) {
