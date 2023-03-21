@@ -12,10 +12,8 @@ import (
 )
 
 func main() {
-	enumCount := uint64(0)
-	pkgCount := uint64(0)
 	since := flag.String("since", "2019-04-10T19:08:52.997264Z", "since time in RFC3339 format")
-	last := flag.String("last", "2019-05-10T19:08:52.997264Z", "last time in RFC3339 format")
+	last := flag.String("last", "2019-04-10T19:08:52.997264Z", "last time in RFC3339 format")
 	cmd := flag.String("cmd", "", "Way of search. vet(default) or grep")
 	vettoolPath := flag.String("vettool", "", "Path of vet tool")
 	pattern := flag.String("pattern", `\benum\b`, "pattern of grep")
@@ -45,22 +43,36 @@ func main() {
 	wg.Add(*searchNum)
 	maxGoroutines := runtime.NumCPU()
 	guard := make(chan struct{}, maxGoroutines)
-
+	ch := make(chan string, maxGoroutines)
+	pkgch := make(chan string, maxGoroutines)
+	searchedPackageList := make([]string, 0)
+	go func() {
+		for r := range ch {
+			searchedPackageList = append(searchedPackageList, r)
+		}
+	}()
+	targetPackageList := make([]string, 0)
+	go func() {
+		for r := range pkgch {
+			targetPackageList = append(targetPackageList, r)
+		}
+	}()
 	// speed up idea
 	// - Execute go vet after filtering by grep.
 	for _, pkgname := range pkgLists[:*searchNum] {
 		guard <- struct{}{}
-		go func(pkgname string) {
+		go func(pkgname string, ch chan<- string, pkgch chan<- string) {
 			defer func() {
 				wg.Done()
 				<-guard
 			}()
-			searcher.EnumSearch(pkgname, &enumCount, &pkgCount, s)
-		}(pkgname)
+			searcher.EnumSearch(pkgname, s, ch, pkgch)
+		}(pkgname, ch, pkgch)
 	}
 	wg.Wait()
-
+	close(ch)
+	close(pkgch)
 	t := time.Now()
 	elapsed := t.Sub(start)
-	fmt.Printf("Number of packages which is pointed out: %d/%d [%s]\n", enumCount, pkgCount, elapsed)
+	fmt.Printf("Number of packages which is pointed out: %d/%d [%s]\n", len(searchedPackageList), len(targetPackageList), elapsed)
 }

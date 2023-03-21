@@ -18,11 +18,11 @@ $ go install github.com/speed1313/enumResearch/cmd/enumResearch
 - Run goindexSearch with go vet
 ```
 $  go run main.go -h
-Usage of /var/folders/yc/fsbnfh950jbfby21gtfxgxyr0000gn/T/go-build2494255682/b001/exe/main:
+Usage of /var/folders/yc/fsbnfh950jbfby21gtfxgxyr0000gn/T/go-build1681217861/b001/exe/main:
   -cmd string
         Way of search. vet(default) or grep
   -last string
-        last time in RFC3339 format (default "2019-05-10T19:08:52.997264Z")
+        last time in RFC3339 format (default "2019-04-10T19:08:52.997264Z")
   -n int
         number of packages to search (default 10)
   -pattern string
@@ -33,17 +33,21 @@ Usage of /var/folders/yc/fsbnfh950jbfby21gtfxgxyr0000gn/T/go-build2494255682/b00
         Path of vet tool
 
 $ go run main.go -cmd vet -vettool /Users/sugiurahajime/go/bin/enumResearch
+Number of packages between 2019-04-10 and 2019-04-10: 864
 golang.org/x/text
-Number of packages which is pointed out: 1/6 [21.194701473s]
+Number of packages which is pointed out: 1/6 [17.993530617s]
+
 ```
 
 - Run goindexSearch with grep
 ```
-$ go run main.go -cmd grep  -pattern "\benum\b" -n 20
-Number of packages between 2019-04-10 and 2019-05-10: 5937
+$ go run main.go -cmd grep  -pattern "\benum\b" -n 30
+Number of packages between 2019-04-10 and 2019-04-10: 864
 golang.org/x/sys
 golang.org/x/text
 gocloud.dev
+cloud.google.com/go
 google.golang.org/api
-Number of packages which is pointed out: 4/16 [52.597020423s]
+Number of packages which is pointed out: 5/26 [33.128365943s]
+
 ```

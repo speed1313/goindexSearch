@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -53,10 +52,10 @@ func GetPkgList(since, last time.Time) []string {
 }
 
 type EnumSearcher interface {
-	Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error
+	Search(dir string, pkgname string, ch chan<- string, pkgch chan<- string) error
 }
 
-func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher EnumSearcher) error {
+func EnumSearch(pkgname string, searcher EnumSearcher, ch chan<- string, pkgch chan<- string) error {
 	dir := getHashedDir(pkgname)
 	defer cleanWorkSpace(pkgname, dir)
 
@@ -74,7 +73,7 @@ func EnumSearch(pkgname string, enumCount *uint64, pkgCount *uint64, searcher En
 			return err
 		}
 	}
-	if err := searcher.Search(dir, pkgname, enumCount, pkgCount); err != nil {
+	if err := searcher.Search(dir, pkgname, ch, pkgch); err != nil {
 		return err
 	}
 	return nil
@@ -121,14 +120,14 @@ type VetSearcher struct {
 	VettoolPath string
 }
 
-func (v VetSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error {
+func (v VetSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch chan<- string) error {
 	arg := path.Join(pkgname, "...")
 	cmd := exec.Command("go", "get", arg)
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
 		return err
 	} else {
-		atomic.AddUint64(pkgCount, 1)
+		pkgch <- pkgname
 	}
 	option := []string{"vet"}
 
@@ -142,7 +141,8 @@ func (v VetSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCo
 	if err != nil {
 		// TODO: if -v is set, print output
 		// print("vet output: ", string(out))
-		atomic.AddUint64(enumCount, 1)
+		// For now, go vet any error is counted.
+		ch <- pkgname
 		println(pkgname)
 	}
 	return nil
@@ -153,14 +153,14 @@ type GrepSearcher struct {
 }
 
 // "grep  $(go list -f '{{.Dir}}' $(go list -f '{{join .Deps "\n"}}' a))"
-func (g GrepSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgCount *uint64) error {
+func (g GrepSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch chan<- string) error {
 	arg := path.Join(pkgname, "...")
 	cmd := exec.Command("go", "get", arg)
 	cmd.Dir = path.Join(".", dir)
 	if err := cmd.Run(); err != nil {
 		return err
 	} else {
-		atomic.AddUint64(pkgCount, 1)
+		pkgch <- pkgname
 	}
 	cmd = exec.Command("go", "list", "-f", "{{.Dir}}", arg)
 	cmd.Dir = path.Join(".", dir)
@@ -175,12 +175,13 @@ func (g GrepSearcher) Search(dir string, pkgname string, enumCount *uint64, pkgC
 		if len(out) > 0 {
 			isEnumUsed = true
 			// TODO: if -v is set, print out
-			//fmt.Print(string(out))
+			// fmt.Print(string(out))
+			break
 		}
 	}
 	if isEnumUsed {
 		fmt.Println(pkgname)
-		atomic.AddUint64(enumCount, 1)
+		ch <- pkgname
 	}
 
 	return nil
