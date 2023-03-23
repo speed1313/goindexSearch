@@ -11,9 +11,24 @@ import (
 	"github.com/speed1313/goindexSearch/searcher"
 )
 
-func main() {
-	since := flag.String("since", "2019-04-10T19:08:52.997264Z", "since time in RFC3339 format")
-	last := flag.String("last", "2019-04-10T19:08:52.997264Z", "last time in RFC3339 format")
+type config struct {
+	Since        time.Time
+	Last         time.Time
+	Cmd          string
+	VettoolPath  string
+	Pattern      string
+	SearchNumber int
+	Sercher      searcher.EnumSearcher
+}
+
+const (
+	defaultSince = "2019-04-10T19:08:52.997264Z"
+	defaultLast  = "2019-04-10T19:08:52.997264Z"
+)
+
+func newConfig() *config {
+	since := flag.String("since", defaultSince, "since time in RFC3339 format")
+	last := flag.String("last", defaultLast, "last time in RFC3339 format")
 	cmd := flag.String("cmd", "", "Way of search. vet(default) or grep")
 	vettoolPath := flag.String("vettool", "", "Path of vet tool")
 	pattern := flag.String("pattern", `\benum\b`, "pattern of grep")
@@ -28,7 +43,6 @@ func main() {
 	default:
 		log.Fatal("choose vet or grep")
 	}
-	start := time.Now()
 	sinceTime, err := time.Parse(time.RFC3339, *since)
 	if err != nil {
 		log.Fatal("parse since time failed: ", err)
@@ -37,10 +51,26 @@ func main() {
 	if err != nil {
 		log.Fatal("parse last time failed: ", err)
 	}
-	pkgLists := searcher.GetPkgList(sinceTime, lastTime)
-	fmt.Printf("Number of packages between %s and %s: %d\n", sinceTime.Format(time.DateOnly), lastTime.Format(time.DateOnly), len(pkgLists))
+	return &config{
+		Since:        sinceTime,
+		Last:         lastTime,
+		Cmd:          *cmd,
+		VettoolPath:  *vettoolPath,
+		Pattern:      *pattern,
+		SearchNumber: *searchNum,
+		Sercher:      s,
+	}
+}
+
+func main() {
+	c := newConfig()
+
+	start := time.Now()
+
+	pkgLists := searcher.GetPkgList(c.Since, c.Last)
+	fmt.Printf("Number of packages between %s and %s: %d\n", c.Since.Format(time.DateOnly), c.Last.Format(time.DateOnly), len(pkgLists))
 	var wg sync.WaitGroup
-	wg.Add(*searchNum)
+	wg.Add(c.SearchNumber)
 	maxGoroutines := runtime.NumCPU()
 	guard := make(chan struct{}, maxGoroutines)
 	ch := make(chan string, maxGoroutines)
@@ -59,14 +89,14 @@ func main() {
 	}()
 	// speed up idea
 	// - Execute go vet after filtering by grep.
-	for _, pkgname := range pkgLists[:*searchNum] {
+	for _, pkgname := range pkgLists[:c.SearchNumber] {
 		guard <- struct{}{}
 		go func(pkgname string, ch chan<- string, pkgch chan<- string) {
 			defer func() {
 				wg.Done()
 				<-guard
 			}()
-			searcher.EnumSearch(pkgname, s, ch, pkgch)
+			searcher.EnumSearch(pkgname, c.Sercher, ch, pkgch)
 		}(pkgname, ch, pkgch)
 	}
 	wg.Wait()
