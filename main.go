@@ -4,11 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+
+	"os"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/speed1313/goindexSearch/searcher"
+	"golang.org/x/exp/slog"
 )
 
 type config struct {
@@ -33,6 +36,7 @@ func newConfig() *config {
 	vettoolPath := flag.String("vettool", "", "Path of vet tool")
 	pattern := flag.String("pattern", `\benum\b`, "pattern of grep")
 	searchNum := flag.Int("n", 10, "number of packages to search")
+	isVerbose := flag.Bool("v", false, "verbose output")
 	flag.Parse()
 	var s searcher.EnumSearcher
 	switch *cmd {
@@ -50,6 +54,12 @@ func newConfig() *config {
 	lastTime, err := time.Parse(time.RFC3339, *last)
 	if err != nil {
 		log.Fatal("parse last time failed: ", err)
+	}
+	if *isVerbose {
+		var programLevel = new(slog.LevelVar) // Info by default
+		h := slog.HandlerOptions{Level: programLevel}.NewTextHandler(os.Stderr)
+		slog.SetDefault(slog.New(h))
+		programLevel.Set(slog.LevelDebug)
 	}
 	return &config{
 		Since:        sinceTime,

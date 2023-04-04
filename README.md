@@ -29,6 +29,7 @@ Usage of /var/folders/yc/fsbnfh950jbfby21gtfxgxyr0000gn/T/go-build1681217861/b00
         pattern of grep (default "\\benum\\b")
   -since string
         since time in RFC3339 format (default "2019-04-10T19:08:52.997264Z")
+  -v    verbose output
   -vettool string
         Path of vet tool
 

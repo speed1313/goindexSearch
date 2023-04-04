@@ -12,6 +12,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/slog"
 )
 
 // get golang package list between since to last from "https://index.golang.org/index"
@@ -137,13 +139,14 @@ func (v VetSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch 
 	option = append(option, arg)
 	cmd = exec.Command("go", option...)
 	cmd.Dir = path.Join(".", dir)
-	_, err := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		// TODO: if -v is set, print output
 		// print("vet output: ", string(out))
 		// For now, go vet any error is counted.
 		ch <- pkgname
-		println(pkgname)
+		slog.Debug("vet", "out", string(out))
+		fmt.Println(pkgname)
 	}
 	return nil
 }
@@ -175,7 +178,7 @@ func (g GrepSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch
 		if len(out) > 0 {
 			isEnumUsed = true
 			// TODO: if -v is set, print out
-			// fmt.Print(string(out))
+			slog.Debug("grep", "out", string(out))
 			break
 		}
 	}
