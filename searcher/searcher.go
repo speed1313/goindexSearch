@@ -141,8 +141,6 @@ func (v VetSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch 
 	cmd.Dir = path.Join(".", dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// TODO: if -v is set, print output
-		// print("vet output: ", string(out))
 		// For now, go vet any error is counted.
 		ch <- pkgname
 		slog.Debug("vet", "out", string(out))
@@ -177,7 +175,6 @@ func (g GrepSearcher) Search(dir string, pkgname string, ch chan<- string, pkgch
 		out, _ := cmd.Output()
 		if len(out) > 0 {
 			isEnumUsed = true
-			// TODO: if -v is set, print out
 			slog.Debug("grep", "out", string(out))
 			break
 		}
